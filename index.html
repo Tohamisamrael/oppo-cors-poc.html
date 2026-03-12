@@ -2,41 +2,75 @@
 <html>
 <body>
 
-<button onclick="run()">Run</button>
+<h3>OPPO CORS Sandbox Test</h3>
 
-<pre id="result"></pre>
+<button onclick="run()">Run Test</button>
+
+<pre id="output"></pre>
 
 <iframe id="frame" sandbox="allow-scripts" style="display:none"></iframe>
 
 <script>
+
+const endpoints = {
+cart:"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
+count:"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+coupon:"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+credit:"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
+}
 
 function run(){
 
 const code = `
 <script>
 
-fetch("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",{
+const endpoints=${JSON.stringify(endpoints)}
+
+for(let name in endpoints){
+
+fetch(endpoints[name],{
 method:"GET",
 credentials:"include"
 })
-.then(r=>r.text())
-.then(t=>{
-parent.postMessage(t,"*")
-})
+.then(r=>r.text().then(t=>{
+
+parent.postMessage({
+endpoint:name,
+status:r.status,
+body:t
+},"*")
+
+}))
 .catch(e=>{
-parent.postMessage("ERROR: "+e,"*")
+
+parent.postMessage({
+endpoint:name,
+status:"error",
+body:e.toString()
+},"*")
+
 })
+
+}
 
 <\/script>
-`;
+`
 
-document.getElementById("frame").srcdoc = code;
+document.getElementById("frame").srcdoc = code
 
 }
 
 window.addEventListener("message",function(e){
-document.getElementById("result").textContent = e.data;
-});
+
+let out=document.getElementById("output")
+
+out.textContent +=
+"Endpoint: "+e.data.endpoint+"\n"+
+"Status: "+e.data.status+"\n"+
+"Response: "+e.data.body+"\n"+
+"----------------------\n"
+
+})
 
 </script>
 
