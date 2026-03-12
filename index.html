@@ -2,53 +2,40 @@
 <html>
 <body>
 
-<button onclick="run()">Run Test</button>
+<button onclick="run()">RUN</button>
 
 <pre id="out"></pre>
 
 <script>
 
-const endpoints = {
+const endpoints = [
 
-cart:"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-count:"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-coupon:"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-credit:"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
+"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
+"https://www.opposhop.cn/cn/oapi/users/web/member/info"
 
-};
+]
 
 function run(){
 
-for(let name in endpoints){
+for (let url of endpoints){
 
-fetch(endpoints[name],{
-
+fetch(url,{
 method:"GET",
-
 credentials:"include",
-
 headers:{
-"Accept":"application/json",
-"X-Requested-With":"XMLHttpRequest"
+"Accept":"application/json, text/plain, */*",
+"Cache-Control":"no-cache"
 }
-
 })
-
 .then(r=>r.text())
-
 .then(t=>{
-
-document.getElementById("out").textContent +=
-"\n"+name+" -> "+t+"\n";
-
+document.getElementById("out").textContent += "\n"+url+"\n"+t+"\n\n"
 })
-
 .catch(e=>{
-
-document.getElementById("out").textContent +=
-"\n"+name+" ERROR -> "+e+"\n";
-
-});
+document.getElementById("out").textContent += "\n"+url+"\nERROR:"+e+"\n\n"
+})
 
 }
 
