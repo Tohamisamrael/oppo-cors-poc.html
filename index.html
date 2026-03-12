@@ -2,7 +2,7 @@
 <html>
 <body>
 
-<button onclick="run()">Run Test</button>
+<button onclick="run()">Run</button>
 
 <pre id="result"></pre>
 
@@ -16,6 +16,7 @@ const code = `
 <script>
 
 fetch("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",{
+method:"GET",
 credentials:"include"
 })
 .then(r=>r.text())
