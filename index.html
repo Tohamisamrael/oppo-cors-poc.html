@@ -61,22 +61,27 @@ const endpoints = [
 function createCard(url) {
     const div = document.createElement("div");
     div.className = "card loading";
+
     div.innerHTML = `
         <b>${url}</b><br>
-        Status: Loading...
+        Status: <span class="status">Loading...</span>
         <pre></pre>
     `;
+
     document.getElementById("results").appendChild(div);
     return div;
 }
 
 async function fetchData(url) {
     const card = createCard(url);
+    const statusEl = card.querySelector(".status");
+    const pre = card.querySelector("pre");
 
     try {
         const res = await fetch(url, {
             method: "GET",
-            credentials: "include"
+            credentials: "include",
+            cache: "force-cache" // 🔥 إجبار استخدام الكاش
         });
 
         const text = await res.text();
@@ -84,26 +89,23 @@ async function fetchData(url) {
         card.classList.remove("loading");
         card.classList.add(res.status === 200 ? "success" : "fail");
 
-        card.innerHTML = `
-            <b>${url}</b><br>
-            Status: ${res.status}
-            <pre>${text}</pre>
-        `;
+        statusEl.innerText = res.status;
+        pre.innerText = text;
+
     } catch (e) {
         card.classList.remove("loading");
         card.classList.add("fail");
 
-        card.innerHTML = `
-            <b>${url}</b><br>
-            Error
-            <pre>${e}</pre>
-        `;
+        statusEl.innerText = "Error";
+        pre.innerText = e;
     }
 }
 
 function runExploit() {
     document.getElementById("results").innerHTML = "";
-    endpoints.forEach(fetchData);
+    endpoints.forEach(url => {
+        fetchData(url);
+    });
 }
 </script>
 
