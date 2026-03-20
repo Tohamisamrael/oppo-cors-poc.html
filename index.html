@@ -78,13 +78,13 @@ async function fetchData(url) {
     const pre = card.querySelector("pre");
 
     try {
-        // 🔥 cache bypass
+        
         const uniqueUrl = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
 
         const res = await fetch(uniqueUrl, {
             method: "GET",
             credentials: "include",
-            cache: "no-store" // ضمان عدم استخدام cache
+            cache: "no-store"
         });
 
         const text = await res.text();
